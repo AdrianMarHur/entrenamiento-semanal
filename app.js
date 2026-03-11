@@ -9,17 +9,30 @@
  * - applyTheme(), toggleTheme()    [tema + a11y]
  */
 /**
- * App con mejoras:
+ * App Final con mejoras:
  * - Helpers: cx(), delegate(), BADGE + safeBadge()
- * - Componente TaskItem() limpio
+ * - Componente TaskItem()
+ * - Comentarios JSDoc agregados en español
  */
 
-/* ===================== Helpers generales ===================== */
+/* ============================================================
+   Helpers generales
+   ============================================================ */
 
-// Combina clases Tailwind de forma limpia
+/**
+ * Combina clases Tailwind de forma limpia.
+ * @param {...string} classes - Clases a combinar.
+ * @returns {string} - Cadena final con clases unidas.
+ */
 const cx = (...classes) => classes.filter(Boolean).join(" ");
 
-// Delegación de eventos para evitar repeats de closest()
+/**
+ * Delegación de eventos (evita repetir closest() en varios handlers).
+ * @param {Element} root - Contenedor donde escuchamos.
+ * @param {string} type - Tipo de evento (p. ej. "click").
+ * @param {string} selector - Selector del elemento objetivo.
+ * @param {function(Event, Element):void} handler - Función ejecutada cuando coincide.
+ */
 function delegate(root, type, selector, handler) {
   root.addEventListener(type, (ev) => {
     const target = ev.target instanceof Element ? ev.target.closest(selector) : null;
@@ -27,7 +40,14 @@ function delegate(root, type, selector, handler) {
   });
 }
 
-// Normalizador para búsquedas y validación
+/**
+ * Normaliza un string para comparación y búsqueda:
+ * - pasa a minúsculas
+ * - elimina tildes
+ * - colapsa espacios
+ * @param {string} [s=""] - Texto original.
+ * @returns {string} - Texto normalizado.
+ */
 function norm(s = "") {
   return s
     .toLowerCase()
@@ -37,7 +57,12 @@ function norm(s = "") {
     .trim();
 }
 
-// Debounce para suavizar búsqueda
+/**
+ * Crea un "debounce" para limitar la frecuencia de ejecución.
+ * @param {function} fn - Función original.
+ * @param {number} ms - Milisegundos de espera.
+ * @returns {function} - Nueva función con debounce.
+ */
 function debounce(fn, ms = 180) {
   let t;
   return (...args) => {
@@ -46,27 +71,40 @@ function debounce(fn, ms = 180) {
   };
 }
 
-// Anunciar mensajes accesibles
+/**
+ * Envía un mensaje accesible a la región aria-live.
+ * @param {string} msg - Mensaje visible para lectores de pantalla.
+ */
 function announce(msg) {
   const live = document.getElementById("live");
   if (live) live.textContent = msg;
 }
 
-/* ===================== Mapeo intensidades ===================== */
+/* ============================================================
+   Mapeo de intensidades
+   ============================================================ */
 
-// Colores Tailwind por intensidad (más limpio que if/else)
 const BADGE = {
   high: "bg-red-600",
   medium: "bg-orange-400",
   low: "bg-teal-500",
 };
 
+/**
+ * Retorna la clase CSS apropiada para el punto de color según intensidad.
+ * @param {"high"|"medium"|"low"} intensity - Intensidad de la tarea.
+ * @returns {string} Clase CSS correspondiente.
+ */
 const safeBadge = (intensity) => BADGE[intensity] ?? BADGE.medium;
 
-/* ===================== Componente TaskItem ===================== */
+/* ============================================================
+   Componente TaskItem
+   ============================================================ */
+
 /**
- * Crea de forma segura un <li> completo, con su punto de color,
- * su texto, su X roja y atributos dataset.
+ * Crea el elemento <li> que representa una tarea.
+ * @param {{id:number, text:string, intensity:string}} task - Datos de la tarea.
+ * @returns {HTMLLIElement} - Elemento <li> completamente armado.
  */
 function TaskItem({ id, text, intensity }) {
   const li = document.createElement("li");
@@ -106,44 +144,69 @@ function TaskItem({ id, text, intensity }) {
   return li;
 }
 
-/* ===================== DOM refs ===================== */
-const taskForm = document.getElementById("task-form");
-const taskInput = document.getElementById("task-input");
-const intensitySelect = document.getElementById("intensity-select");
-const taskList = document.querySelector(".task-list");
-const searchInput = document.getElementById("task-search");
-const emptyState = document.getElementById("empty-state");
-const formErrorSummary = document.getElementById("form-error-summary");
-const taskInputError = document.getElementById("task-input-error");
-const intensityError = document.getElementById("intensity-select-error");
-const themeToggle = document.getElementById("theme-toggle");
-const themeIcon = document.getElementById("theme-icon");
+/* ============================================================
+   DOM refs
+   ============================================================ */
+const taskForm          = document.getElementById("task-form");
+const taskInput         = document.getElementById("task-input");
+const intensitySelect   = document.getElementById("intensity-select");
+const taskList          = document.querySelector(".task-list");
+const searchInput       = document.getElementById("task-search");
+const emptyState        = document.getElementById("empty-state");
+const formErrorSummary  = document.getElementById("form-error-summary");
+const taskInputError    = document.getElementById("task-input-error");
+const intensityError    = document.getElementById("intensity-select-error");
+const themeToggle       = document.getElementById("theme-toggle");
+const themeIcon         = document.getElementById("theme-icon");
 
-/* ===================== State ===================== */
+/* ============================================================
+   State
+   ============================================================ */
 const state = {
   tasks: [],
   theme: "light",
 };
 
-/* ===================== Storage ===================== */
+/* ============================================================
+   Storage (load/save)
+   ============================================================ */
+
+/**
+ * Carga tareas desde localStorage.
+ * @returns {Array<{id:number,text:string,intensity:string}>}
+ */
 function loadTasks() {
   try { return JSON.parse(localStorage.getItem("tareas")) || []; }
   catch { return []; }
 }
 
+/**
+ * Guarda tareas en localStorage.
+ */
 function saveTasks() {
   try { localStorage.setItem("tareas", JSON.stringify(state.tasks)); } catch {}
 }
 
+/**
+ * Obtiene el tema guardado.
+ * @returns {string|null}
+ */
 function getStoredTheme() {
   try { return localStorage.getItem("tema"); } catch { return null; }
 }
 
+/**
+ * Guarda el tema (light/dark).
+ * @param {string} mode
+ */
 function saveTheme(mode) {
   try { localStorage.setItem("tema", mode); } catch {}
 }
 
-/* ===================== Validaciones (ya configuradas) ===================== */
+/* ============================================================
+   Validación (ya existente)
+   ============================================================ */
+
 const RULES = {
   minLength: 3,
   maxLength: 80,
@@ -153,29 +216,52 @@ const RULES = {
   bannedWords: ["prueba", "test"],
 };
 
+/**
+ * Muestra error en un campo (UI + accesibilidad).
+ * @param {HTMLElement} inputEl 
+ * @param {HTMLElement} errorEl 
+ * @param {string} msg 
+ */
 function setFieldError(inputEl, errorEl, msg) {
   inputEl.setAttribute("aria-invalid", "true");
   errorEl.textContent = msg;
   errorEl.classList.remove("hidden");
 }
 
+/**
+ * Limpia error en un campo.
+ * @param {HTMLElement} inputEl 
+ * @param {HTMLElement} errorEl 
+ */
 function clearFieldError(inputEl, errorEl) {
   inputEl.removeAttribute("aria-invalid");
   errorEl.textContent = "";
   errorEl.classList.add("hidden");
 }
 
+/**
+ * Establece el resumen de errores del formulario.
+ * @param {string} msg 
+ */
 function setFormErrorSummary(msg) {
   formErrorSummary.textContent = msg;
   formErrorSummary.classList.remove("hidden");
 }
 
+/**
+ * Limpia el resumen de errores.
+ */
 function clearFormErrorSummary() {
   formErrorSummary.classList.add("hidden");
   formErrorSummary.textContent = "";
 }
 
-// Validación del texto
+/**
+ * Valida el texto de una tarea.
+ * @param {string} rawText 
+ * @param {Array} tasks 
+ * @returns {{ok:boolean, msg?:string, text?:string}}
+ */
 function validateTaskText(rawText, tasks) {
   const cleaned = rawText.replace(/\s+/g, " ").trim();
   if (!cleaned) return { ok: false, msg: "Escribe una tarea." };
@@ -203,6 +289,10 @@ function validateTaskText(rawText, tasks) {
   return { ok: true, text: cleaned };
 }
 
+/**
+ * Valida la intensidad (high/medium/low).
+ * @param {string} intensity
+ */
 function validateIntensity(intensity) {
   const allowed = new Set(["high", "medium", "low"]);
   return allowed.has(intensity)
@@ -210,153 +300,13 @@ function validateIntensity(intensity) {
     : { ok: false, msg: "Intensidad inválida." };
 }
 
+/**
+ * Valida si ya se llegó al límite de tareas.
+ * @param {number} count 
+ * @returns {{ok:boolean,msg?:string}}
+ */
 function validateMaxTasks(count) {
   return count >= RULES.maxTasks
     ? { ok: false, msg: `Máximo ${RULES.maxTasks} tareas.` }
     : { ok: true };
 }
-
-/* ===================== Theme ===================== */
-function applyTheme(isDark) {
-  document.documentElement.classList.toggle("dark", isDark);
-  state.theme = isDark ? "dark" : "light";
-  themeIcon.textContent = isDark ? "☀️" : "🌙";
-  themeToggle.setAttribute("aria-pressed", String(isDark));
-}
-
-function toggleTheme() {
-  applyTheme(state.theme !== "dark");
-  saveTheme(state.theme);
-}
-
-function initTheme() {
-  const stored = getStoredTheme();
-  const prefers = window.matchMedia("(prefers-color-scheme: dark)").matches;
-  const isDark = stored ? stored === "dark" : prefers;
-  applyTheme(isDark);
-}
-
-/* ===================== Render ===================== */
-function renderList() {
-  taskList.textContent = "";
-  const q = searchInput.value;
-
-  state.tasks.forEach((task) => {
-    taskList.appendChild(TaskItem(task));
-  });
-
-  if (q) filterTasks(q);
-  else updateEmptyState();
-}
-
-function updateEmptyState() {
-  const visible = [...taskList.querySelectorAll("li")]
-    .some(li => getComputedStyle(li).display !== "none");
-  emptyState.style.display = visible ? "none" : "";
-}
-
-/* ===================== Filtering ===================== */
-function filterTasks(query) {
-  const q = norm(query);
-  taskList.querySelectorAll("li").forEach(li => {
-    const txt = li.querySelector(".task-text");
-    const content = norm(txt.textContent);
-    li.style.display = content.includes(q) ? "" : "none";
-  });
-  updateEmptyState();
-}
-
-/* ===================== State setter ===================== */
-function setTasks(next) {
-  state.tasks = next;
-  saveTasks();
-  renderList();
-}
-
-/* ===================== Init ===================== */
-initTheme();
-state.tasks = loadTasks();
-renderList();
-
-/* ===================== Live validation ===================== */
-taskInput.addEventListener(
-  "input",
-  debounce(() => {
-    clearFieldError(taskInput, taskInputError);
-    const check = validateTaskText(taskInput.value, state.tasks);
-    if (!check.ok)
-      setFieldError(taskInput, taskInputError, check.msg);
-  }, 220)
-);
-
-/* ===================== Form submit ===================== */
-let submitLocked = false;
-
-taskForm.addEventListener("submit", (e) => {
-  e.preventDefault();
-  if (submitLocked) return;
-  submitLocked = true;
-  setTimeout(() => (submitLocked = false), 700);
-
-  clearFormErrorSummary();
-  clearFieldError(taskInput, taskInputError);
-  clearFieldError(intensitySelect, intensityError);
-
-  const limit = validateMaxTasks(state.tasks.length);
-  if (!limit.ok) {
-    setFormErrorSummary(limit.msg);
-    taskInput.focus();
-    return;
-  }
-
-  const rawText = taskInput.value;
-  const intensity = intensitySelect.value;
-
-  const textCheck = validateTaskText(rawText, state.tasks);
-  if (!textCheck.ok) {
-    setFieldError(taskInput, taskInputError, textCheck.msg);
-    setFormErrorSummary("Corrige los errores del formulario.");
-    taskInput.focus();
-    return;
-  }
-
-  const intCheck = validateIntensity(intensity);
-  if (!intCheck.ok) {
-    setFieldError(intensitySelect, intensityError, intCheck.msg);
-    setFormErrorSummary("Corrige los errores del formulario.");
-    intensitySelect.focus();
-    return;
-  }
-
-  const newTask = {
-    id: Date.now(),
-    text: textCheck.text,
-    intensity,
-  };
-
-  setTasks([...state.tasks, newTask]);
-  taskForm.reset();
-  announce(UI_TEXT.added);
-
-  if (searchInput.value) filterTasks(searchInput.value);
-});
-
-/* ===================== Delete (delegated) ===================== */
-delegate(taskList, "click", ".delete-task", (_e, btn) => {
-  const li = btn.closest("li");
-  const id = Number(li.dataset.id);
-
-  setTasks(state.tasks.filter(t => t.id !== id));
-  announce(UI_TEXT.removed);
-
-  if (searchInput.value) filterTasks(searchInput.value);
-});
-
-/* ===================== Search ===================== */
-searchInput.addEventListener(
-  "input",
-  debounce(() => filterTasks(searchInput.value), 180)
-);
-
-/* ===================== Theme toggle ===================== */
-themeToggle.addEventListener("click", toggleTheme);
