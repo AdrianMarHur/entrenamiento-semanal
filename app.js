@@ -111,6 +111,7 @@ function TaskItem({ id, text, intensity, completed = false }) {
   li.dataset.id = id;
   li.dataset.intensity = intensity;
   li.dataset.completed = completed ? "true" : "false";
+  li.draggable = true;
 
   li.className = cx(
     "flex items-center justify-between gap-3 p-3",
@@ -192,7 +193,7 @@ const state = {
   theme: "light",
   filter: "all", // all | active | done
   intensityFilter: "all", // all | high | medium | low
-  sort: "newest", // newest | oldest | intensity-desc | intensity-asc
+  sort: "manual", // manual | newest | oldest | intensity-desc | intensity-asc
   query: "",
 };
 
@@ -366,6 +367,11 @@ function getVisibleTasks() {
         : !!t.completed;
     return matchesQuery && matchesFilter && matchesIntensity;
   });
+
+  // Orden
+  if (state.sort === "manual") {
+    return filtered; // respeta el orden actual del array (se modifica con drag & drop)
+  }
 
   const sorted = [...filtered];
   switch (state.sort) {
@@ -547,6 +553,53 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Delegación en lista: borrar y completar
   if (taskList) {
+    // Drag & drop para reordenar cuando el modo es "manual"
+    let draggedId = null;
+
+    taskList.addEventListener("dragstart", (ev) => {
+      if (state.sort !== "manual") return;
+      const li = ev.target.closest("li");
+      if (!li) return;
+      const id = Number(li.dataset.id);
+      if (!Number.isFinite(id)) return;
+      draggedId = id;
+      li.classList.add("opacity-60");
+      ev.dataTransfer.effectAllowed = "move";
+    });
+
+    taskList.addEventListener("dragover", (ev) => {
+      if (state.sort !== "manual") return;
+      if (!draggedId) return;
+      ev.preventDefault();
+      ev.dataTransfer.dropEffect = "move";
+    });
+
+    taskList.addEventListener("drop", (ev) => {
+      if (state.sort !== "manual") return;
+      if (!draggedId) return;
+      ev.preventDefault();
+      const targetLi = ev.target.closest("li");
+      if (!targetLi) return;
+      const targetId = Number(targetLi.dataset.id);
+      if (!Number.isFinite(targetId) || targetId === draggedId) return;
+
+      const fromIndex = state.tasks.findIndex((t) => t.id === draggedId);
+      const toIndex = state.tasks.findIndex((t) => t.id === targetId);
+      if (fromIndex === -1 || toIndex === -1) return;
+
+      const next = [...state.tasks];
+      const [moved] = next.splice(fromIndex, 1);
+      next.splice(toIndex, 0, moved);
+      setTasks(next);
+    });
+
+    taskList.addEventListener("dragend", () => {
+      draggedId = null;
+      Array.from(taskList.querySelectorAll("li")).forEach((li) =>
+        li.classList.remove("opacity-60")
+      );
+    });
+
     delegate(taskList, "click", ".delete-task", (ev, btn) => {
       ev.preventDefault();
       const li = btn.closest("li");
