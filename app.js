@@ -138,6 +138,20 @@ function TaskItem({ id, text, intensity, completed = false }) {
 
   left.append(check, dot, spanText);
 
+  const actions = document.createElement("span");
+  actions.className = "inline-flex items-center gap-2";
+
+  const editBtn = document.createElement("button");
+  editBtn.type = "button";
+  editBtn.className = cx(
+    "edit-task px-2 py-1 rounded",
+    "bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-100",
+    "hover:bg-slate-300 dark:hover:bg-slate-600",
+    "active:scale-95 transition text-sm"
+  );
+  editBtn.textContent = "Editar";
+  editBtn.setAttribute("aria-label", "Editar tarea");
+
   const delBtn = document.createElement("button");
   delBtn.type = "button";
   delBtn.className = cx(
@@ -148,7 +162,8 @@ function TaskItem({ id, text, intensity, completed = false }) {
   delBtn.textContent = "✖";
   delBtn.setAttribute("aria-label", "Borrar tarea");
 
-  li.append(left, delBtn);
+  actions.append(editBtn, delBtn);
+  li.append(left, actions);
   return li;
 }
 
@@ -503,6 +518,36 @@ document.addEventListener("DOMContentLoaded", () => {
       const id = li ? Number(li.dataset.id) : NaN;
       if (!Number.isFinite(id)) return;
       toggleCompleteById(id);
+    });
+
+    // editar tarea (prompt sencillo reutilizando las validaciones)
+    delegate(taskList, "click", ".edit-task", (ev, btn) => {
+      ev.preventDefault();
+      const li = btn.closest("li");
+      const id = li ? Number(li.dataset.id) : NaN;
+      if (!Number.isFinite(id)) return;
+      const current = state.tasks.find((t) => t.id === id);
+      if (!current) return;
+
+      const nuevo = window.prompt("Editar tarea:", current.text);
+      if (nuevo == null) return; // cancelado
+
+      const res = validateTaskText(
+        nuevo,
+        state.tasks.filter((t) => t.id !== id)
+      );
+
+      if (!res.ok) {
+        setFormErrorSummary(res.msg);
+        announce(res.msg);
+        return;
+      }
+
+      const next = state.tasks.map((t) =>
+        t.id === id ? { ...t, text: res.text } : t
+      );
+      setTasks(next);
+      announce("Tarea actualizada.");
     });
   }
 });
